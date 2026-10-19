@@ -33,7 +33,7 @@ Future<void> main() async {
 
   final auth = AuthService();
   try {
-    await auth.load();
+    await auth.load().timeout(const Duration(seconds: 3));
   } catch (_) {}
 
   runApp(
@@ -65,11 +65,11 @@ class NeonRadioApp extends StatelessWidget {
             Positioned(
               left: 0,
               right: 0,
-              bottom: 0,
+              top: 0,
               child: Material(
                 color: Colors.red.shade900,
                 child: SafeArea(
-                  top: false,
+                  bottom: false,
                   child: Padding(
                     padding: const EdgeInsets.all(8),
                     child: Text('Ses servisi hatası: $initError',

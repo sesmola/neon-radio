@@ -34,16 +34,25 @@ class AuthService extends ChangeNotifier {
     if (password.length < 4) return 'Şifre en az 4 karakter olmalı';
 
     _identifier = identifier.trim();
-    final p = await SharedPreferences.getInstance();
-    await p.setString(_kUser, _identifier!);
-    notifyListeners();
+    notifyListeners(); // önce ana ekrana geç, kayıt arkada denensin
+
+    try {
+      final p = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 3));
+      await p.setString(_kUser, _identifier!);
+    } catch (_) {
+      // Kayıt başarısız olsa bile oturum bu çalışma boyunca açık kalır.
+    }
     return null;
   }
 
   Future<void> logout() async {
     _identifier = null;
-    final p = await SharedPreferences.getInstance();
-    await p.remove(_kUser);
     notifyListeners();
+    try {
+      final p = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 3));
+      await p.remove(_kUser);
+    } catch (_) {}
   }
 }
