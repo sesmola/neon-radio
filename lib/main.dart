@@ -13,18 +13,28 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Arka plan çalma + bildirim/kilit ekranı kontrolü
-  final handler = await AudioService.init(
-    builder: () => RadioAudioHandler(),
-    config: const AudioServiceConfig(
-      androidNotificationChannelId: 'com.example.neonradio.audio',
-      androidNotificationChannelName: 'Neon Radyo',
-      androidNotificationOngoing: true,
-    ),
-  );
+  RadioAudioHandler handler;
+  String? initError;
+  try {
+    // Arka plan çalma + bildirim/kilit ekranı kontrolü
+    handler = await AudioService.init(
+      builder: () => RadioAudioHandler(),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId: 'com.example.neonradio.audio',
+        androidNotificationChannelName: 'Neon Radyo',
+        androidNotificationOngoing: true,
+      ),
+    ).timeout(const Duration(seconds: 8));
+  } catch (e) {
+    // Servis başlamazsa uygulama yine de açılır (sadece ön planda çalar)
+    initError = e.toString();
+    handler = RadioAudioHandler();
+  }
 
   final auth = AuthService();
-  await auth.load();
+  try {
+    await auth.load();
+  } catch (_) {}
 
   runApp(
     MultiProvider(
@@ -33,13 +43,14 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => RadioProvider(handler)),
         ChangeNotifierProvider(create: (_) => BroadcastService()),
       ],
-      child: const NeonRadioApp(),
+      child: NeonRadioApp(initError: initError),
     ),
   );
 }
 
 class NeonRadioApp extends StatelessWidget {
-  const NeonRadioApp({super.key});
+  final String? initError;
+  const NeonRadioApp({super.key, this.initError});
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +58,30 @@ class NeonRadioApp extends StatelessWidget {
       title: 'Neon Radyo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
+      builder: (context, child) => Stack(
+        children: [
+          child ?? const SizedBox.shrink(),
+          if (initError != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Material(
+                color: Colors.red.shade900,
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text('Ses servisi hatası: $initError',
+                        maxLines: 6,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, color: Colors.white)),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       home: Consumer<AuthService>(
         builder: (_, auth, __) =>
             auth.isLoggedIn ? const MainShell() : const LoginScreen(),
