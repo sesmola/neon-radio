@@ -1,0 +1,17 @@
+# WHIP (yayın girişi): http://SUNUCU_IP:8889/live/whip
+webrtcAddress: :8889
+webrtcLocalUDPAddress: :8189
+# NAT arkasındaysanız sunucunun genel IP'sini yazın:
+# webrtcAdditionalHosts: [SUNUCU_GENEL_IP]
+
+paths:
+  live:
+    # Yayın başlayınca ffmpeg ile MP3'e çevirip Icecast'e gönder.
+    runOnReady: >
+      ffmpeg -i rtsp://localhost:$RTSP_PORT/$MTX_PATH
+      -vn -c:a libmp3lame -b:a 128k -content_type audio/mpeg
+      -ice_name "Neon Radyo" -f mp3
+      icecast://source:degistir_source@localhost:8000/live
+    runOnReadyRestart: yes
+    # Yetkisiz yayını engellemek için (önerilir): authInternalUsers ile
+    # publish yetkisini kullanıcı/şifre veya token'a bağlayın.

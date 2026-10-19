@@ -1,0 +1,20 @@
+# Sunucuda (VPS) çalıştırın:  docker compose up -d
+# Akış:  Telefon (WebRTC/WHIP) -> MediaMTX -> FFmpeg (MP3) -> Icecast -> Dinleyiciler
+services:
+  icecast:
+    image: moul/icecast
+    restart: always
+    environment:
+      ICECAST_SOURCE_PASSWORD: degistir_source
+      ICECAST_ADMIN_PASSWORD: degistir_admin
+      ICECAST_PASSWORD: degistir_relay
+      ICECAST_HOSTNAME: radyo.ornek.com
+    ports:
+      - "8000:8000"
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest-ffmpeg
+    restart: always
+    network_mode: host          # WebRTC UDP portları için en sorunsuz yöntem
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
